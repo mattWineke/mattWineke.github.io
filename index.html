@@ -11,11 +11,11 @@
 
 body{position:relative;overflow-x:hidden}
 header,main,footer{position:relative;z-index:1}
-.bg-scene{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+.bg-scene{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}.particle-canvas{position:absolute;inset:0;width:100%;height:100%;opacity:.9}
 .bg-scene:before{content:"";position:absolute;inset:0;background:
 linear-gradient(rgba(124,140,255,.032) 1px,transparent 1px),
 linear-gradient(90deg,rgba(124,140,255,.032) 1px,transparent 1px);
-background-size:58px 58px;mask-image:radial-gradient(circle at 50% 38%,#000 0 45%,transparent 88%)}
+background-size:58px 58px;opacity:.75;mask-image:radial-gradient(circle at 50% 38%,#000 0 55%,transparent 94%)}
 .bg-scene:after{content:"";position:absolute;inset:-15%;background:
 radial-gradient(circle at 20% 20%,rgba(124,140,255,.12),transparent 25%),
 radial-gradient(circle at 82% 36%,rgba(85,214,190,.085),transparent 23%),
@@ -27,10 +27,10 @@ animation:particleFloat var(--d) ease-in-out infinite alternate;animation-delay:
 .particle:nth-child(3n){background:#72e5d0;box-shadow:0 0 12px rgba(85,214,190,.5);opacity:.18}
 .particle:nth-child(4n){width:2px;height:2px;opacity:.28}
 .code-drift{position:absolute;margin:0;color:#aeb7d4;font:12px/1.75 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
-white-space:pre;opacity:.045;letter-spacing:.01em;user-select:none;filter:blur(.15px)}
-.code-a{top:9%;right:-2%;transform:rotate(-3deg);animation:codeFloatA 24s ease-in-out infinite alternate}
-.code-b{top:48%;left:-3%;transform:rotate(2deg);animation:codeFloatB 28s ease-in-out infinite alternate}
-.code-c{bottom:4%;right:7%;transform:rotate(-1deg);animation:codeFloatA 30s ease-in-out infinite alternate-reverse}
+white-space:pre;opacity:.105;letter-spacing:.01em;text-shadow:0 0 18px rgba(124,140,255,.12);user-select:none;filter:blur(.15px)}
+.code-a{top:7%;right:1%;transform:rotate(-3deg);animation:codeFloatA 24s ease-in-out infinite alternate}
+.code-b{top:45%;left:1%;transform:rotate(2deg);animation:codeFloatB 28s ease-in-out infinite alternate}
+.code-c{bottom:5%;right:4%;transform:rotate(-1deg);animation:codeFloatA 30s ease-in-out infinite alternate-reverse}
 @keyframes ambientShift{from{transform:translate3d(-1.5%,-1%,0) scale(1)}to{transform:translate3d(2%,1.5%,0) scale(1.06)}}
 @keyframes particleFloat{from{transform:translate3d(0,0,0) scale(.85)}to{transform:translate3d(18px,-28px,0) scale(1.25)}}
 @keyframes codeFloatA{from{transform:translate3d(0,0,0) rotate(-3deg)}to{transform:translate3d(-28px,22px,0) rotate(-2deg)}}
@@ -43,6 +43,7 @@ white-space:pre;opacity:.045;letter-spacing:.01em;user-select:none;filter:blur(.
 <body>
 
 <div class="bg-scene" aria-hidden="true">
+  <canvas class="particle-canvas" id="particle-canvas"></canvas>
   <span class="particle" style="--x:7%;--y:14%;--s:3px;--d:8s;--delay:-2s"></span>
   <span class="particle" style="--x:14%;--y:69%;--s:4px;--d:11s;--delay:-5s"></span>
   <span class="particle" style="--x:22%;--y:31%;--s:2px;--d:9s;--delay:-1s"></span>
@@ -105,5 +106,89 @@ sem_post(&items);</pre>
 <section class="section wrap" id="contact"><div class="contact"><span class="kicker">Contact</span><h2>Interested in building something useful?</h2><p>I’m currently interested in software engineering and ML/AI opportunities where I can keep developing technically while contributing to real systems and products.</p><a class="btn primary" href="mailto:winekematthew@gmail.com">winekematthew@gmail.com ↗</a></div></section>
 </main>
 <footer class="footer"><div class="wrap"><span>© 2026 Matthew Wineke</span><span>Built with HTML & CSS · Hosted on <span class="accent">GitHub Pages</span></span></div></footer>
+
+<script>
+(() => {
+  const canvas = document.getElementById('particle-canvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let dpr = Math.min(window.devicePixelRatio || 1, 2);
+  let particles = [];
+  let width = 0, height = 0, raf = null;
+
+  function resize() {
+    width = window.innerWidth;
+    height = window.innerHeight;
+    canvas.width = Math.floor(width * dpr);
+    canvas.height = Math.floor(height * dpr);
+    canvas.style.width = width + 'px';
+    canvas.style.height = height + 'px';
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+    const count = width < 700 ? 34 : Math.min(78, Math.floor(width / 19));
+    particles = Array.from({length: count}, () => ({
+      x: Math.random() * width,
+      y: Math.random() * height,
+      vx: (Math.random() - .5) * .22,
+      vy: (Math.random() - .5) * .22,
+      r: Math.random() * 1.6 + .8,
+      type: Math.random() > .72 ? 1 : 0
+    }));
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, width, height);
+
+    for (let i = 0; i < particles.length; i++) {
+      const p = particles[i];
+
+      if (!reduceMotion) {
+        p.x += p.vx;
+        p.y += p.vy;
+        if (p.x < -20) p.x = width + 20;
+        if (p.x > width + 20) p.x = -20;
+        if (p.y < -20) p.y = height + 20;
+        if (p.y > height + 20) p.y = -20;
+      }
+
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+      ctx.fillStyle = p.type ? 'rgba(85,214,190,.70)' : 'rgba(150,163,255,.68)';
+      ctx.shadowBlur = 10;
+      ctx.shadowColor = p.type ? 'rgba(85,214,190,.38)' : 'rgba(124,140,255,.38)';
+      ctx.fill();
+      ctx.shadowBlur = 0;
+
+      for (let j = i + 1; j < particles.length; j++) {
+        const q = particles[j];
+        const dx = p.x - q.x;
+        const dy = p.y - q.y;
+        const dist = Math.hypot(dx, dy);
+        if (dist < 125) {
+          const alpha = (1 - dist / 125) * .12;
+          ctx.beginPath();
+          ctx.moveTo(p.x, p.y);
+          ctx.lineTo(q.x, q.y);
+          ctx.strokeStyle = 'rgba(126,143,225,' + alpha + ')';
+          ctx.lineWidth = .7;
+          ctx.stroke();
+        }
+      }
+    }
+
+    if (!reduceMotion) raf = requestAnimationFrame(draw);
+  }
+
+  resize();
+  draw();
+  window.addEventListener('resize', () => {
+    cancelAnimationFrame(raf);
+    resize();
+    draw();
+  }, {passive:true});
+})();
+</script>
+
 </body>
 </html>
